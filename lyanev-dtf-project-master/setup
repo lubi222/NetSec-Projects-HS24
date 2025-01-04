@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# IP: 164.92.195.225
+# username: laynev
+
+
+# IDEAS:
+# - use sudo for commands
+# - dmesg
+# - ping
+# - nginx files (if you hit the check vm button you can see in nginx access logs what is the grader doing)
+# - firewall rules
+# expect command: https://stackoverflow.com/questions/14670716/simulate-user-input-in-bash-script
+# so in general check all types of output and logs and status for clues
+
+# stops processing in case of failure
+set -euo pipefail
+
+# prints each line executed
+set -x
+
+pwd
+
+echo "Write up your solution below"
+
+ls -a
+
+# login 
+# DOMAIN="lyanev.student.dtf.netsec.inf.ethz.ch"
+# ACME_SERVER="https://acme.dtf.netsec.inf.ethz.ch/acme/default/directory"
+# NGINX_CONF="/etc/nginx/sites-available/default"
+# CERT_PATH="/etc/letsencrypt/live/lyanev.student.dtf.netsec.inf.ethz.ch/fullchain.pem"
+# KEY_PATH="/etc/letsencrypt/live/lyanev.student.dtf.netsec.inf.ethz.ch/privkey.pem"
+
+# SSH lyanev@164.92.195.225 
+## TASK 1 ##
+sudo nft flush ruleset;
+## TASK 2 ##
+sudo nft add table inet filter
+sudo nft add chain inet filter input { type filter hook input priority 0 \; }
+sudo nft add rule inet filter input ip saddr 129.132.121.162 tcp dport 5432 accept
+sudo nft add rule inet filter input tcp dport 5432 drop
+
+## TASK 3 ##
+sudo sed -i 's|/app |/app/|' /etc/nginx/sites-enabled/company-app.conf
+
+## TASK 4 ##
+# in nginx.conf, replace the line with all the protocols with just a line with TLSv1.3 (the only acceptable one)
+sudo sed -i 's/ssl_protocols[^;]*;/ssl_protocols TLSv1.3;/' /etc/nginx/nginx.conf
+sudo systemctl reload nginx
+
+## TASK 5 ##
+
+echo "before installing"
+
+sudo apt install -y certbot python3-certbot-nginx
+
+sudo certbot  --register-unsafely-without-email --agree-tos --non-interactive --server "https://acme.dtf.netsec.inf.ethz.ch/acme/default/directory" --nginx -d "lyanev.student.dtf.netsec.inf.ethz.ch"
+
+echo "hello"
+sudo systemctl reload nginx
+
+sudo ls -a
+
+
+sudo systemctl reload nginx
+# what I've used:
+# 2.1. 
+#   sudo nft flush ruleset
+# 
+# 2.2. 
+#   dig grader.dtf.netsec.inf.ethz.ch -> get IP of grader
+#   sudo nft add table inet filter
+#   sudo nft add chain inet filter input { type filter hook input priority 0 \; }
